@@ -174,7 +174,7 @@ def run_oauth_flow():
         else:
             flow.fetch_token(code=st.query_params['code'])
             st.session_state.token = flow.credentials.to_json()
-            st.experimental_rerun()
+            st.rerun()
     
     if 'token' in st.session_state:
         return Credentials.from_authorized_user_info(json.loads(st.session_state.token))
