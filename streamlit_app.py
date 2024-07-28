@@ -7,7 +7,6 @@ from googleapiclient.discovery import build
 import datetime
 from dateutil.relativedelta import relativedelta
 import os
-from dotenv import load_dotenv
 
 # Streamlit başlık
 st.title('SEO Forecasting Tool with Google Search Console Integration')
