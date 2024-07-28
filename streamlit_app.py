@@ -159,7 +159,7 @@ def main():
         print(f"Streamlit redirect URI: {redirect_uri}")
 
     # OAuth akışı
-    flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri="http://localhost:8501/")
+    flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri="https://gsc-forecast-whn6zxuvo86sua5yp8kp6h.streamlit.app/")
     
     if 'credentials' not in st.session_state:
         auth_url, _ = flow.authorization_url(prompt='consent')
