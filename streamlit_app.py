@@ -9,9 +9,6 @@ from dateutil.relativedelta import relativedelta
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # .env dosyasını yükle
-
-
 # Streamlit başlık
 st.title('SEO Forecasting Tool with Google Search Console Integration')
 
