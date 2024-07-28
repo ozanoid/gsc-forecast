@@ -7,9 +7,11 @@ from googleapiclient.discovery import build
 import datetime
 from dateutil.relativedelta import relativedelta
 import os
+from requests_oauthlib import OAuth2Session
+import json
 
 # Streamlit başlık
-st.title('SEO Forecasting Tool with Google Search Console Integration')
+st.title('SEO Forecasting Tool with Google Search Console Integrationz')
 
 # Google OAuth ve API kurulumu
 CLIENT_CONFIG = {
@@ -152,26 +154,38 @@ def update_target(period, group, key):
 def on_site_change():
     st.session_state.selected_site = st.session_state.site_selector
 
+# Token işlemleri için yardımcı fonksiyonlar
+def token_saver(token):
+    st.session_state.token = token
+
+# OAuth akışı
+def run_oauth_flow():
+    client_config = CLIENT_CONFIG['web']
+    flow = Flow.from_client_config(
+        client_config=CLIENT_CONFIG,
+        scopes=SCOPES,
+        redirect_uri=client_config['redirect_uris'][0]
+    )
+    
+    if 'token' not in st.session_state:
+        if 'code' not in st.query_params:
+            authorization_url, _ = flow.authorization_url(prompt='consent')
+            st.markdown(f"[Click here to authorize]({authorization_url})")
+        else:
+            flow.fetch_token(code=st.query_params['code'])
+            st.session_state.token = flow.credentials.to_json()
+            st.experimental_rerun()
+    
+    if 'token' in st.session_state:
+        return Credentials.from_authorized_user_info(json.loads(st.session_state.token))
+    
+    return None
+
 # Ana uygulama
 def main():
-    redirect_uri = st.query_params.get("redirect_uri", [None])[0]
-    if redirect_uri:
-        print(f"Streamlit redirect URI: {redirect_uri}")
-
-    # OAuth akışı
-    flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES, redirect_uri="https://gsc-forecast-whn6zxuvo86sua5yp8kp6h.streamlit.app/")
+    credentials = run_oauth_flow()
     
-    if 'credentials' not in st.session_state:
-        auth_url, _ = flow.authorization_url(prompt='consent')
-        st.markdown(f"[Click here to authorize]({auth_url})")
-        code = st.text_input("Enter the authorization code:")
-        if code:
-            flow.fetch_token(code=code)
-            st.session_state.credentials = flow.credentials
-    
-    if 'credentials' in st.session_state:
-        credentials = st.session_state.credentials
-        
+    if credentials:
         if 'site_urls' not in st.session_state:
             service = build('searchconsole', 'v1', credentials=credentials)
             sites = service.sites().list().execute()
@@ -180,30 +194,24 @@ def main():
         if 'selected_site' not in st.session_state:
             st.session_state.selected_site = st.session_state.site_urls[0] if st.session_state.site_urls else None
 
-        # Arama kutusu ekleniyor
+        # Arama kutusu ve site seçimi
         search_term = st.text_input("Search for a site:", "")
-        
-        # Site listesi filtreleniyor
         filtered_sites = [site for site in st.session_state.site_urls if search_term.lower() in site.lower()]
-        
-        # Filtrelenmiş liste üzerinden site seçimi yapılıyor
         selected_site = st.selectbox(
             "Select a property:",
             filtered_sites,
             index=0 if filtered_sites else None,
             key='site_selector'
         )
-        
-        # Seçilen site session state'e kaydediliyor
         if selected_site:
             st.session_state.selected_site = selected_site
 
+        # Tarih hesaplamaları ve dönem hedefleri
         start_date, end_date = calculate_dates()
         st.write(f"Analiz dönemi: {start_date.strftime('%Y-%m-%d')} - {end_date.strftime('%Y-%m-%d')}")
         st.markdown(f"Seçili site: `{st.session_state.selected_site}`")
         
         periods = calculate_period_dates(start_date, end_date)
-        
         for period, (period_start, period_end) in periods.items():
             st.subheader(f"{period} Dönemi Hedef Pozisyonları ({period_start.strftime('%Y-%m-%d')} - {period_end.strftime('%Y-%m-%d')})")
             get_target_positions(period)
