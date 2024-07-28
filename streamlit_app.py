@@ -164,7 +164,7 @@ def run_oauth_flow():
     flow = Flow.from_client_config(
         client_config=CLIENT_CONFIG,
         scopes=SCOPES,
-        redirect_uri=client_config['redirect_uris'][0]
+        redirect_uri="https://gsc-forecast-whn6zxuvo86sua5yp8kp6h.streamlit.app/"
     )
     
     if 'token' not in st.session_state:
